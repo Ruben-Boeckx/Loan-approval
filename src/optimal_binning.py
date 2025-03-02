@@ -495,12 +495,38 @@ class OptimalBinning:
         return woe_X
 
     def get_binning_table(self) -> pd.DataFrame:
-        """Return the binning table as a pandas DataFrame."""
+        """Return the binning table as a pandas DataFrame with summary row."""
         if not self._fitted:
             raise ValueError("Model not fitted yet. Call 'fit' before using 'get_binning_table'.")
             
         df = pd.DataFrame(self.binning_table)
+        
+        # Calculate totals for summary row
+        total_count = df['Count'].sum()
+        total_non_event = df['Non-event'].sum()
+        total_event = df['Event'].sum()
+        
+        # Calculate overall event rate
+        total_event_rate = total_event / total_count if total_count > 0 else 0
+        
+        # Create IV percentage column
         df['IV_percentage'] = (df['IV'] / self.iv_total * 100).round(2) if self.iv_total > 0 else 0.0
+        
+        # Create summary row
+        summary_row = pd.DataFrame([{
+            'Bin': 'Total',
+            'Count': total_count,
+            'Non-event': total_non_event,
+            'Event': total_event,
+            'Event rate': total_event_rate,
+            'WoE': "",
+            'IV': self.iv_total,
+            'IV_percentage': 100.0  # Total IV is 100% of total IV
+        }])
+        
+        # Append the summary row to the dataframe
+        df = pd.concat([df, summary_row], ignore_index=True)
+        
         return df
 
     def plot_binning(self, figsize=(10, 6)):
